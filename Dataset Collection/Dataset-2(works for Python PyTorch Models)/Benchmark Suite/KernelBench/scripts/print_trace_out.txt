@@ -1,0 +1,31 @@
+Model found: True
+get_init_inputs found: True
+get_inputs found: True
+get_init_inputs -> [480, 192, 96, 208, 16, 48, 64]
+Input count: 1
+ Input[0] shape: (10, 480, 224, 224) dtype: torch.float32
+Model instantiated
+
+Conv modules and weight shapes:
+  branch1x1: weight.shape = (192, 480, 1, 1) groups= 1
+  branch3x3.0: weight.shape = (96, 480, 1, 1) groups= 1
+  branch3x3.1: weight.shape = (208, 96, 3, 3) groups= 1
+  branch5x5.0: weight.shape = (16, 480, 1, 1) groups= 1
+  branch5x5.1: weight.shape = (48, 16, 5, 5) groups= 1
+  branch_pool.1: weight.shape = (64, 480, 1, 1) groups= 1
+
+Attempting TorchScript trace...
+Tracing succeeded. Graph node kinds:
+ - prim::GetAttr
+ - prim::GetAttr
+ - prim::GetAttr
+ - prim::GetAttr
+ - prim::CallMethod
+ - prim::CallMethod
+ - prim::CallMethod
+ - prim::CallMethod
+ - prim::ListConstruct
+ - prim::Constant
+ - aten::cat
+
+Done
