@@ -21,35 +21,6 @@ cd www && python app.py
 # Opens at http://localhost:5000
 ```
 
-## 📚 Documentation
-
-**Start here based on your role:**
-
-- **👤 User/Researcher** → [SUBSYSTEMS.md](SUBSYSTEMS.md)
-  - High-level overview of all components
-  - Common workflows and examples
-  - When to use each tool
-
-- **🛠️ Developer/DevOps** → [BUILD_SYSTEM.md](BUILD_SYSTEM.md)
-  - Command-line interface reference
-  - Project structure
-  - Troubleshooting guide
-
-- **🔬 Data Scientist** → [Model Training/README.md](Model%20Training/README.md)
-  - Model architecture and training
-  - Hyperparameter tuning with Optuna
-  - Experiment comparison
-
-- **📊 Data Engineer** → [Dataset-2 KernelBench README](Dataset%20Collection/Dataset-2/Benchmark%20Suite/KernelBench/README.md)
-  - Data collection pipeline
-  - Feature extraction (FLOPs, memory)
-  - GPU support and benchmarking
-
-- **🌐 Web Developer** → [Web App README](www/README.md)
-  - Flask backend and REST API
-  - CodeMirror editor integration
-  - Model deployment
-
 ## 🏗️ Project Structure
 
 ```
