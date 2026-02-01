@@ -8,7 +8,7 @@ dset_names = [
     'all_merge_df_Tesla.csv',
 ]
 df_ada = pd.read_csv(
-    f'/home/think-server/Documents/Project47_QuantPowerPred/quant_powerpred/data/{dset_names[0]}'
+    f'./data/{dset_names[0]}'
 )
 df_ada['Key'] = (
     df_ada['KernelName'].astype(str)
@@ -19,7 +19,7 @@ df_ada = df_ada.drop_duplicates(subset=['Key'])
 df_ada['Architecture'] = 'adaloveace'
 
 df_ampere = pd.read_csv(
-    f'/home/think-server/Documents/Project47_QuantPowerPred/quant_powerpred/data/{dset_names[1]}'
+    f'./data/{dset_names[1]}'
 )
 df_ampere['Key'] = (
     df_ampere['KernelName'].astype(str)
@@ -30,7 +30,7 @@ df_ampere = df_ampere.drop_duplicates(subset=['Key'])
 df_ampere['Architecture'] = 'ampere'
 
 df_k80 = pd.read_csv(
-    f'/home/think-server/Documents/Project47_QuantPowerPred/quant_powerpred/data/{dset_names[2]}'
+    f'./data/{dset_names[2]}'
 )
 df_k80['Key'] = (
     df_k80['KernelName'].astype(str)
@@ -41,7 +41,7 @@ df_k80 = df_k80.drop_duplicates(subset=['Key'])
 df_k80['Architecture'] = 'k80'
 
 df_tesla = pd.read_csv(
-    f'/home/think-server/Documents/Project47_QuantPowerPred/quant_powerpred/data/{dset_names[3]}'
+    f'./data/{dset_names[3]}'
 )
 df_tesla['Key'] = (
     df_tesla['KernelName'].astype(str)
@@ -77,19 +77,19 @@ print(
 print(f'Common keys: {len(common_keys)}')
 
 df_ada_filtered.to_csv(
-    '/home/think-server/Documents/Project47_QuantPowerPred/quant_powerpred/cache/cleaned_datasets/ada.csv',
+    './cache/cleaned_datasets/ada.csv',
     index=False,
 )
 df_ampere_filtered.to_csv(
-    '/home/think-server/Documents/Project47_QuantPowerPred/quant_powerpred/cache/cleaned_datasets/ampere.csv',
+    './cache/cleaned_datasets/ampere.csv',
     index=False,
 )
 df_k80_filtered.to_csv(
-    '/home/think-server/Documents/Project47_QuantPowerPred/quant_powerpred/cache/cleaned_datasets/k80.csv',
+    './cache/cleaned_datasets/k80.csv',
     index=False,
 )
 df_tesla_filtered.to_csv(
-    '/home/think-server/Documents/Project47_QuantPowerPred/quant_powerpred/cache/cleaned_datasets/tesla.csv',
+    './cache/cleaned_datasets/tesla.csv',
     index=False,
 )
 
@@ -98,7 +98,7 @@ df_combined = pd.concat(
 )
 # df_combined = pd.concat([df_ada_filtered], ignore_index=True)
 df_combined.to_csv(
-    '/home/think-server/Documents/Project47_QuantPowerPred/quant_powerpred/cache/cleaned_datasets/combined.csv',
+    './cache/cleaned_datasets/combined.csv',
     index=False,
 )
 
@@ -128,22 +128,22 @@ for col in lst_selected_features:
     df_tesla_filtered[col] = quant_transform(df_tesla_filtered[col].values)
 
 df_ada_filtered.to_csv(
-    '/home/think-server/Documents/Project47_QuantPowerPred/quant_powerpred/cache/cleaned_datasets/ada_quant.csv',
+    './cache/cleaned_datasets/ada_quant.csv',
     index=False,
 )
 df_ampere_filtered.to_csv(
-    '/home/think-server/Documents/Project47_QuantPowerPred/quant_powerpred/cache/cleaned_datasets/ampere_quant.csv',
+    './cache/cleaned_datasets/ampere_quant.csv',
     index=False,
 )
 df_k80_filtered.to_csv(
-    '/home/think-server/Documents/Project47_QuantPowerPred/quant_powerpred/cache/cleaned_datasets/k80_quant.csv',
+    './cache/cleaned_datasets/k80_quant.csv',
     index=False,
 )
 df_tesla_filtered.to_csv(
-    '/home/think-server/Documents/Project47_QuantPowerPred/quant_powerpred/cache/cleaned_datasets/tesla_quant.csv',
+    './cache/cleaned_datasets/tesla_quant.csv',
     index=False,
 )
 df_combined.to_csv(
-    '/home/think-server/Documents/Project47_QuantPowerPred/quant_powerpred/cache/cleaned_datasets/combined_quant.csv',
+    './cache/cleaned_datasets/combined_quant.csv',
     index=False,
 )

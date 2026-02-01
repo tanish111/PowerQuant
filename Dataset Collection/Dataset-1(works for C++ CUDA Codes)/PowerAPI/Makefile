@@ -265,7 +265,7 @@ ALL_LDFLAGS += $(addprefix -Xlinker ,$(EXTRA_LDFLAGS))
 
 # Common includes and paths for CUDA
 INCLUDES  := -I/usr/local/cuda-11.0/samples/common/inc/
-HEADERNVMLAPI = -L/usr/local/cuda-11.0/lib64/stubs -lnvidia-ml -L/usr/local/cuda-11.0/lib64/stubs -lcuda -I/usr/include -lpthread -I/home/fduser/nvml-power-master
+HEADERNVMLAPI = -L/usr/local/cuda-11.0/lib64/stubs -lnvidia-ml -L/usr/local/cuda-11.0/lib64/stubs -lcuda -I/usr/include -lpthread
 
 ################################################################################
 
