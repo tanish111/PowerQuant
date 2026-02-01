@@ -209,7 +209,7 @@ def load_custom_model(
 
 def _cleanup_cuda_extensions():
     """Helper function to cleanup compiled CUDA extensions"""
-    # SIMON NOTE: is this necessary?
+    # TODO: Verify if this is necessary
     import shutil
 
     torch_extensions_path = os.path.join(
@@ -242,7 +242,7 @@ def graceful_eval_cleanup(
         tempfile.close()
         os.remove(tempfile.name)
 
-    # _cleanup_cuda_extensions() # SIMON NOTE: is this necessary?
+    # _cleanup_cuda_extensions() # TODO: Verify if this is necessary
 
 
 def build_compile_cache_legacy(
