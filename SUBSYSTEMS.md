@@ -288,7 +288,7 @@ cd www && python app.py
 ### File Locations
 
 ```
-Project root: /Users/tanishdesai37/Downloads/PowerQuant
+Project root: /path/to/PowerQuant
 
 KernelBench scripts:
   /Dataset Collection/Dataset-2/Benchmark Suite/KernelBench/scripts/

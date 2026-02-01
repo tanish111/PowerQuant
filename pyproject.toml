@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 name = "powerquant"
 version = "0.1.0"
 description = "Power consumption prediction using quantile regression"
-authors = [{name = "PowerQuant Team"}]
+authors = [{name = "Anonymous"}]
 requires-python = ">=3.10"
 dependencies = [
     "torch>=2.0.0",

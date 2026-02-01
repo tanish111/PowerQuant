@@ -5,7 +5,7 @@ A complete ML pipeline for predicting GPU power consumption from PyTorch model c
 ## 🎯 Quick Start (30 seconds)
 
 ```bash
-cd /Users/tanishdesai37/Downloads/PowerQuant
+cd /path/to/PowerQuant
 
 # 1. Install dependencies
 pip install torch pandas numpy scikit-learn optuna catboost joblib click rich python-dotenv
@@ -301,7 +301,7 @@ ruff>=0.1.0
 ### From Scratch
 ```bash
 # Clone or download project
-cd /Users/tanishdesai37/Downloads/PowerQuant
+cd /path/to/PowerQuant
 
 # Install with uv (recommended)
 pip install uv
@@ -426,9 +426,9 @@ If you use PowerQuant in your research, please cite:
 ```bibtex
 @software{powerquant2026,
   title={PowerQuant: GPU Power Consumption Prediction},
-  author={PowerQuant Team},
+  author={Anonymous},
   year={2026},
-  url={https://github.com/yourusername/PowerQuant}
+  url={https://github.com/anonymous/PowerQuant}
 }
 ```
 
