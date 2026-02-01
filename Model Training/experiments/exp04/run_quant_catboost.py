@@ -15,8 +15,8 @@ import optuna
 
 from experiments.exp04.logger import ExperimentLogger
 from experiments.exp04.utils import extract_dataset_name, train_and_evaluate_model
-from src.base_classifiers.catboost import CatBoost, CatBoostConfig
-from src.quant_classifier import QuantileClassifier
+from src.base_classifier.catboost import CatBoost, CatBoostConfig
+from src.quantile_classifier.quant_classifier import QuantileClassifier
 
 
 catboost_config = CatBoostConfig(

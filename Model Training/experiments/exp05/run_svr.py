@@ -14,7 +14,7 @@ import optuna
 
 from experiments.exp05.logger import ExperimentLogger
 from experiments.exp05.utils import extract_dataset_name, train_and_evaluate_model
-from src.base_classifiers.svr import SupportVectorRegressor, SVRConfig
+from src.base_classifier.svr import SupportVectorRegressor, SVRConfig
 
 
 svr_config = SVRConfig(

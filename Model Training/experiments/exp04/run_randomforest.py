@@ -14,7 +14,7 @@ import optuna
 
 from experiments.exp04.logger import ExperimentLogger
 from experiments.exp04.utils import extract_dataset_name, train_and_evaluate_model
-from src.base_classifiers.randomforest import RandomForest, RandomForestConfig
+from src.base_classifier.randomforest import RandomForest, RandomForestConfig
 
 
 randomforest_config = RandomForestConfig(

@@ -21,8 +21,8 @@ REPO_TOP_PATH = os.path.abspath(
 sys.path.insert(0, REPO_TOP_PATH)
 
 import torch
-from kernelbench.eval import load_original_model_and_inputs, set_seed
-from kernelbench.dataset import construct_problem_dataset_from_problem_dir
+from src.eval import load_original_model_and_inputs, set_seed
+from src.dataset import construct_problem_dataset_from_problem_dir
 
 
 def _vars_used_by_get_inputs_init_inputs(source: str) -> Set[str]:
@@ -202,6 +202,14 @@ class VariableScaler:
             self.variable_values[var_name] = original_value
             if original_value is not None and isinstance(original_value, (int, float)):
                 new_value = int(original_value * self.multiplier)
+                
+                # CRITICAL: Prevent zero or negative dimensions (causes FPE crashes)
+                if new_value < 1:
+                    new_value = 1
+                    if original_value > 0:
+                        # Only warn if original was positive (not already problematic)
+                        print(f"[WARNING] Variable '{var_name}' scaled to {int(original_value * self.multiplier)}, clamped to 1")
+                
                 indent = len(line) - len(line.lstrip())
                 new_lines.append(' ' * indent + f"{var_name} = {new_value}")
                 scaled_values[var_name] = new_value

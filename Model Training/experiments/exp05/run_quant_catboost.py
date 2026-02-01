@@ -12,11 +12,12 @@ sys.path.append(project_root)
 # Now import from experiments and src
 import numpy as np
 import optuna
+import joblib
 
 from experiments.exp05.logger import ExperimentLogger
 from experiments.exp05.utils import extract_dataset_name, train_and_evaluate_model
-from src.base_classifiers.catboost import CatBoost, CatBoostConfig
-from src.quant_classifier import QuantileClassifier
+from src.base_classifier.catboost import CatBoost, CatBoostConfig
+from src.quantile_classifier.quant_classifier import QuantileClassifier
 
 
 catboost_config = CatBoostConfig(
@@ -81,11 +82,45 @@ def main():
 
     dataset_name = extract_dataset_name(args.dataset)
 
+    # Create models directory
+    models_dir = os.path.join(project_root, 'models')
+    os.makedirs(models_dir, exist_ok=True)
+
     # 'a100', 'h100', 'rtx4000', 'rtx5000'
     for test_arch in ['a100', 'h100', 'rtx4000', 'rtx5000']:
+        print(f"\n{'='*60}")
+        print(f"Training for architecture: {test_arch}")
+        print(f"{'='*60}")
+        
         objective = get_objective(args.dataset, dataset_name, test_arch=test_arch)
         study = optuna.create_study(direction='maximize')
         study.optimize(objective, n_trials=20)
+        
+        # Train final model with best hyperparameters
+        print(f"\nBest trial for {test_arch}: {study.best_trial.params}")
+        print(f"Best R² score: {study.best_value:.4f}")
+        
+        best_params = study.best_trial.params
+        config = CatBoostConfig(
+            depth=best_params['depth'],
+            learning_rate=best_params['learning_rate'],
+            iterations=best_params['iterations'],
+            min_data_in_leaf=best_params['min_data_in_leaf'],
+            l2_leaf_reg=best_params['l2_leaf_reg'],
+            loss_function=best_params['loss_function'],
+        )
+        if config.loss_function == 'Logloss':
+            config.loss_function = LoglossObjective()
+        
+        base_classifier = CatBoost(config)
+        best_model = QuantileClassifier(base_classifier)
+        best_model, _ = train_and_evaluate_model(best_model, data_path=args.dataset, test_arch=test_arch)
+        
+        # Save model
+        model_filename = f'exp05_quant_catboost_{test_arch}_{dataset_name}.pkl'
+        model_path = os.path.join(models_dir, model_filename)
+        joblib.dump(best_model, model_path)
+        print(f"\nModel saved to: {model_path}")
 
 
 if __name__ == '__main__':

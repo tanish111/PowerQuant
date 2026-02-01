@@ -14,7 +14,7 @@ import optuna
 
 from experiments.exp02.logger import ExperimentLogger
 from experiments.exp02.utils import train_and_evaluate_model
-from src.base_classifiers.catboost import CatBoost, CatBoostConfig
+from src.base_classifier.catboost import CatBoost, CatBoostConfig
 
 
 catboost_config = CatBoostConfig(

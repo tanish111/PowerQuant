@@ -14,8 +14,8 @@ import optuna
 
 from experiments.exp04.logger import ExperimentLogger
 from experiments.exp04.utils import extract_dataset_name, train_and_evaluate_model
-from src.base_classifiers.randomforest import RandomForest, RandomForestConfig
-from src.quant_classifier import QuantileClassifier
+from src.base_classifier.randomforest import RandomForest, RandomForestConfig
+from src.quantile_classifier.quant_classifier import QuantileClassifier
 
 
 randomforest_config = RandomForestConfig(

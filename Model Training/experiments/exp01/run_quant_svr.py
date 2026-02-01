@@ -13,8 +13,8 @@ import optuna
 
 from experiments.exp01.logger import ExperimentLogger
 from experiments.exp01.utils import train_and_evaluate_model
-from src.base_classifiers.svr import SupportVectorRegressor, SVRConfig
-from src.quant_classifier import QuantileClassifier
+from src.base_classifier.svr import SupportVectorRegressor, SVRConfig
+from src.quantile_classifier.quant_classifier import QuantileClassifier
 
 
 svr_config = SVRConfig(

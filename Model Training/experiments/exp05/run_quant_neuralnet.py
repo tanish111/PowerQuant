@@ -14,8 +14,8 @@ import optuna
 
 from experiments.exp05.logger import ExperimentLogger
 from experiments.exp05.utils import extract_dataset_name, train_and_evaluate_model
-from src.base_classifiers.neuralnet import NeuralNet, NeuralNetConfig
-from src.quant_classifier import QuantileClassifier
+from src.base_classifier.neuralnet import NeuralNet, NeuralNetConfig
+from src.quantile_classifier.quant_classifier import QuantileClassifier
 
 
 neuralnet_config = NeuralNetConfig(
@@ -80,11 +80,43 @@ def main():
 
     dataset_name = extract_dataset_name(args.dataset)
 
+    # Create models directory
+    models_dir = os.path.join(project_root, 'models')
+    os.makedirs(models_dir, exist_ok=True)
+
     # 'a100', 'h100', 'rtx4000', 'rtx5000'
     for test_arch in ['a100', 'h100', 'rtx4000', 'rtx5000']:
+        print(f"\n{'='*60}")
+        print(f"Training for architecture: {test_arch}")
+        print(f"{'='*60}")
+        
         objective = get_objective(args.dataset, dataset_name, test_arch=test_arch)
         study = optuna.create_study(direction='maximize')
         study.optimize(objective, n_trials=20)
+        
+        # Train final model with best hyperparameters
+        print(f"\nBest trial for {test_arch}: {study.best_trial.params}")
+        print(f"Best R² score: {study.best_value:.4f}")
+        
+        best_params = study.best_trial.params
+        config = NeuralNetConfig(
+            hidden_layer_sizes=best_params['hidden_layer_sizes'],
+            activation=best_params['activation'],
+            dropout_rate=best_params['dropout_rate'],
+            learning_rate=best_params['learning_rate'],
+            num_epochs=best_params['num_epochs'],
+            batch_size=best_params['batch_size'],
+        )
+        
+        base_classifier = NeuralNet(config)
+        best_model = QuantileClassifier(base_classifier)
+        best_model, _ = train_and_evaluate_model(best_model, data_path=args.dataset, test_arch=test_arch)
+        
+        # Save model
+        model_filename = f'exp05_quant_neuralnet_{test_arch}_{dataset_name}.pkl'
+        model_path = os.path.join(models_dir, model_filename)
+        joblib.dump(best_model, model_path)
+        print(f"\nModel saved to: {model_path}")
 
 
 if __name__ == '__main__':

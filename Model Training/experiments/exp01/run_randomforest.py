@@ -13,7 +13,7 @@ import optuna
 
 from experiments.exp01.logger import ExperimentLogger
 from experiments.exp01.utils import train_and_evaluate_model
-from src.base_classifiers.randomforest import RandomForest, RandomForestConfig
+from src.base_classifier.randomforest import RandomForest, RandomForestConfig
 
 
 randomforest_config = RandomForestConfig(

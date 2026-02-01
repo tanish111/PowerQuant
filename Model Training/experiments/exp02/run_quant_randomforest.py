@@ -13,8 +13,8 @@ import optuna
 
 from experiments.exp02.logger import ExperimentLogger
 from experiments.exp02.utils import train_and_evaluate_model
-from src.base_classifiers.randomforest import RandomForest, RandomForestConfig
-from src.quant_classifier import QuantileClassifier
+from src.base_classifier.randomforest import RandomForest, RandomForestConfig
+from src.quantile_classifier.quant_classifier import QuantileClassifier
 
 
 randomforest_config = RandomForestConfig(
