@@ -22,8 +22,7 @@ Model Training/
 │   ├── exp01/                    # Baseline experiment (stratified split)
 │   ├── exp02/                    # Alternative configuration
 │   ├── exp04/                    # Another variant
-│   ├── exp05/                    # Quantile with 3+1 architecture split
-│   └── exp06/                    # **NEW** Quantile with random 80/20 split
+│   └── exp05/                    # Quantile with 3+1 architecture split
 ├── main.py                        # Entry point (if used)
 └── src/
     ├── base_classifier/          # Core model implementations
@@ -47,25 +46,24 @@ Model Training/
 - Include both base models and quantile wrappers
 - Useful for comparison and ablation studies
 
-### **Exp06: Production Model** (Recommended)
+### **Exp05: Standard Quantile Model** (Recommended)
 
-The newest experiment optimized for production deployment:
+The default experiment for standard runs:
 
 ```bash
 # Train all 4 quantile models
-python ../build.py build-model exp06
+python ../build.py build-model exp05
 
 # Train specific model
-python ../build.py build-model exp06 --file run_quant_catboost.py
+python ../build.py build-model exp05 --file run_quant_catboost.py
 ```
 
 **Key Features:**
-- ✅ Uses **entire dataset** (no per-architecture partitioning)
-- ✅ **Random 80/20 train/test split** for better generalization
-- ✅ **Hyperparameter tuning** with Optuna (20 trials per model)
-- ✅ **Automatic model saving** to `models/exp06_quant_*.pkl`
-- ✅ **Dynamic feature selection** from CSV headers
-- ✅ **Architecture one-hot encoding** for categorical handling
+- ✅ Per-architecture split strategy
+- ✅ Hyperparameter tuning with Optuna (20 trials per model)
+- ✅ Automatic model saving to `models/exp05_quant_*.pkl`
+- ✅ Dynamic feature selection from CSV headers
+- ✅ Architecture one-hot encoding for categorical handling
 
 ## Training a Model
 
@@ -73,7 +71,7 @@ python ../build.py build-model exp06 --file run_quant_catboost.py
 
 ```bash
 cd /path/to/PowerQuant
-python build.py build-model exp06
+python build.py build-model exp05
 ```
 
 ### Running Directly
@@ -81,7 +79,7 @@ python build.py build-model exp06
 ```bash
 cd Model\ Training
 export PROJECT_ROOT=$(pwd)/..
-python experiments/exp06/run_quant_catboost.py --dataset data/combined_static_20260127_092347.csv
+python experiments/exp05/run_quant_catboost.py --dataset data/combined_static_20260127_092347.csv
 ```
 
 ## Data Preparation
@@ -182,10 +180,10 @@ Trained models are serialized with `joblib`:
 import joblib
 
 # Save
-joblib.dump(model, "models/exp06_quant_catboost.pkl")
+joblib.dump(model, "models/exp05_quant_catboost.pkl")
 
 # Load
-model = joblib.load("models/exp06_quant_catboost.pkl")
+model = joblib.load("models/exp05_quant_catboost.pkl")
 predictions = model.predict(X_new)
 ```
 
@@ -196,12 +194,12 @@ The `www/app.py` Flask backend loads trained models at startup:
 ```python
 import joblib
 
-# Load all exp06 models
+# Load all exp05 models
 models = {
-    "catboost": joblib.load("Model Training/models/exp06_quant_catboost.pkl"),
-    "neuralnet": joblib.load("Model Training/models/exp06_quant_neuralnet.pkl"),
-    "randomforest": joblib.load("Model Training/models/exp06_quant_randomforest.pkl"),
-    "svr": joblib.load("Model Training/models/exp06_quant_svr.pkl"),
+    "catboost": joblib.load("Model Training/models/exp05_quant_catboost.pkl"),
+    "neuralnet": joblib.load("Model Training/models/exp05_quant_neuralnet.pkl"),
+    "randomforest": joblib.load("Model Training/models/exp05_quant_randomforest.pkl"),
+    "svr": joblib.load("Model Training/models/exp05_quant_svr.pkl"),
 }
 
 # Use for predictions
@@ -238,7 +236,7 @@ ln -s ../Dataset\ Collection/Dataset-2/Dataset Model\ Training/data
 
 ### Custom Dataset
 ```bash
-python build.py build-model exp06 --dataset data/my_custom.csv
+python build.py build-model exp05 --dataset data/my_custom.csv
 ```
 
 ### Retraining on New Data
@@ -247,7 +245,7 @@ python build.py build-model exp06 --dataset data/my_custom.csv
 python build.py collect-dataset
 
 # Retrain models
-python build.py build-model exp06
+python build.py build-model exp05
 ```
 
 ### Model Comparison
@@ -256,7 +254,7 @@ python build.py list-experiments
 # Try different experiments to compare strategies
 python build.py build-model exp01
 python build.py build-model exp05
-python build.py build-model exp06
+python build.py build-model exp05
 ```
 
 ## Configuration Files

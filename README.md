@@ -14,7 +14,7 @@ pip install torch pandas numpy scikit-learn optuna catboost joblib click rich py
 python build.py collect-dataset
 
 # 3. Train models
-python build.py build-model exp06
+python build.py build-model exp05
 
 # 4. Launch web app
 cd www && python app.py
@@ -48,10 +48,7 @@ PowerQuant/
 │   ├── experiments/
 │   │   ├── exp01/                            # Baseline experiment
 │   │   ├── exp02-05/                         # Alternative configs
-│   │   └── exp06/                            # ⭐ Production model (NEW)
-│   │       ├── logger.py                     # Logging
-│   │       ├── utils.py                      # Data preparation
-│   │       └── run_quant_*.py               # 4 training scripts
+│   │   └── exp05/                            # Quantile models (stratified split)
 │   └── src/
 │       ├── base_classifier/                  # CatBoost, NeuralNet, RandomForest, SVR
 │       ├── quantile_classifier/              # Quantile regression wrapper
@@ -107,7 +104,7 @@ Trains 4 quantile regression models on GPU power data.
 - Automatic model serialization with joblib
 - Evaluation: R², MAE, RMSE metrics
 
-**Recommended:** Use **exp06** for production (entire dataset, 80/20 random split)
+**Recommended:** Use **exp05** for standard runs (per-architecture split)
 
 ### 4. Web Application (Flask)
 Interactive web UI for PyTorch model analysis and power prediction.
@@ -134,14 +131,14 @@ KernelBench (generate_baseline_time.py)
     ↓
 Model Training/data (symlink)
     ↓
-Training Pipeline (exp06)
+Training Pipeline (exp01-05)
     ├─→ Load CSV dynamically
     ├─→ Select numeric columns
     ├─→ One-hot encode architecture
-    ├─→ 80/20 random split
+    ├─→ Stratified or configured split
     ├─→ Optuna hyperparameter tuning
     ├─→ Train 4 models
-    └─→ Save to models/exp06_quant_*.pkl
+    └─→ Save to models/exp*_quant_*.pkl
     ↓
 Web Application
     ├─→ Load trained models
@@ -152,15 +149,14 @@ Web Application
 
 ## 🎯 Experiment Comparison
 
-| Aspect | exp01-05 | exp06 (⭐) |
-|--------|----------|-----------|
-| **Dataset** | Per-architecture split | Entire dataset |
-| **Train/Test** | Stratified | Random 80/20 |
-| **Models** | 8 (base + quantile) | 4 (quantile only) |
-| **Training Time** | Longer | Faster |
-| **Generalization** | Per-architecture | Cross-GPU |
-| **Scalability** | Limited | Better |
-| **Recommended** | Legacy | ✅ Production |
+| Aspect | exp01-05 |
+|--------|----------|
+| **Dataset** | Per-architecture split |
+| **Train/Test** | Stratified |
+| **Models** | Base + quantile |
+| **Training Time** | Longer |
+| **Generalization** | Per-architecture |
+| **Scalability** | Limited |
 
 ## 📈 Performance Metrics
 
@@ -197,27 +193,26 @@ Automatically detected from CSV headers:
 ```bash
 # Start fresh on new GPU hardware
 python build.py collect-dataset              # 1. Collect data
-python build.py build-model exp06            # 2. Train models
+python build.py build-model exp05            # 2. Train models
 cd www && python app.py                      # 3. Use predictions
 ```
 
 ### Workflow 2: Retrain with Same Data
 ```bash
-# Retrain exp06 models (data already collected)
-python build.py build-model exp06
+# Retrain exp05 models (data already collected)
+python build.py build-model exp05
 ```
 
 ### Workflow 3: Train Single Model
 ```bash
-# Train only CatBoost for exp06
-python build.py build-model exp06 --file run_quant_catboost.py
+# Train only CatBoost for exp05
+python build.py build-model exp05 --file run_quant_catboost.py
 ```
 
 ### Workflow 4: Compare Experiments
 ```bash
 python build.py build-model exp01              # Baseline
 python build.py build-model exp05              # Architecture-stratified
-python build.py build-model exp06              # Random split (recommended)
 # Compare results in Model Training/experiments/exp*/results.json
 ```
 
@@ -292,7 +287,7 @@ python build.py status
 
 ### Local Development
 ```bash
-python build.py build-model exp06
+python build.py build-model exp05
 cd www && python app.py
 ```
 
@@ -345,8 +340,8 @@ lsof -ti:5000 | xargs kill -9
 # List available experiments
 python build.py list-experiments
 
-# Create exp06 if missing
-python build.py build-model exp06
+# Create exp05 if missing
+python build.py build-model exp05
 ```
 
 ### "Models not found for predictions"
@@ -355,13 +350,13 @@ python build.py build-model exp06
 ls Model\ Training/models/
 
 # Should show:
-# exp06_quant_catboost.pkl
-# exp06_quant_neuralnet.pkl
-# exp06_quant_randomforest.pkl
-# exp06_quant_svr.pkl
+# exp05_quant_catboost.pkl
+# exp05_quant_neuralnet.pkl
+# exp05_quant_randomforest.pkl
+# exp05_quant_svr.pkl
 
 # If missing, retrain
-python build.py build-model exp06
+python build.py build-model exp05
 ```
 
 ## 📖 For More Details

@@ -58,7 +58,6 @@ architecture, power_consumption
 
 **Experiments:**
 - **exp01-05** - Various baseline configurations
-- **exp06** - Production model (entire dataset, 80/20 split) ⭐
 
 **Models (4-per experiment):**
 1. **CatBoost** - Gradient boosting
@@ -109,28 +108,27 @@ architecture, power_consumption
 
 ---
 
+**Experiments:**
+- **exp01-05** - Various baseline configurations
 ## 🔄 Data Flow
 
 ```
 collect-dataset
-    ↓
+  ↓
 KernelBench
-    ├─→ generate_baseline_time.py
-    ├─→ extract_model_features.py
-    └─→ Dataset CSV
-    ↓
-Model Training/data/ (symlink)
-    ↓
-build-model exp06
-    ├─→ prepare_data()
-    ├─→ hyperparameter tuning (Optuna)
-    ├─→ train 4 models
-    └─→ save to models/
-    ↓
+  ├─→ generate_baseline_time.py
+  ├─→ extract_model_features.py
+  └─→ Dataset CSV
+  ↓
+build-model exp05
+  ├─→ prepare_data()
+  ├─→ hyperparameter tuning (Optuna)
+  ├─→ train 4 models
+  └─→ save to models/
+  ↓
 Web App
-    ├─→ load trained models
-    ├─→ analyze PyTorch code
-    └─→ predict power
+  ├─→ load trained models
+  └─→ predict power
 ```
 
 ## 🛠️ Common Workflows
@@ -142,7 +140,7 @@ Web App
 python build.py collect-dataset
 
 # 2. Train models on new data
-python build.py build-model exp06
+python build.py build-model exp05
 
 # 3. Launch web app
 cd www && python app.py
@@ -151,30 +149,27 @@ cd www && python app.py
 ### Workflow 2: Train Specific Model
 
 ```bash
-# Train only CatBoost for exp06
-python build.py build-model exp06 --file run_quant_catboost.py
+# Train only CatBoost for exp05
+python build.py build-model exp05 --file run_quant_catboost.py
 
 # Check results
-cat Model\ Training/experiments/exp06/results.json
+cat Model\ Training/experiments/exp05/results.json
 ```
 
 ### Workflow 3: API Integration
 
 ```python
-# Use web app endpoints
 import requests
 
-# Analyze model
 response = requests.post(
-    "http://localhost:5000/api/analyze",
-    json={"code": "import torch\n..."}
+  "http://localhost:5000/api/analyze",
+  json={"code": "import torch\n..."}
 )
 features = response.json()["features"]
 
-# Get predictions
 response = requests.post(
-    "http://localhost:5000/api/predict",
-    json={"features": features}
+  "http://localhost:5000/api/predict",
+  json={"features": features}
 )
 predictions = response.json()["predictions"]
 ```
@@ -182,19 +177,28 @@ predictions = response.json()["predictions"]
 ### Workflow 4: Experiment Comparison
 
 ```bash
-# Compare different experiments
-python build.py list-experiments
-
-# Train different exp variants
 python build.py build-model exp01  # Baseline
 python build.py build-model exp05  # Architecture-stratified
-python build.py build-model exp06  # Random split (recommended)
 
-# Compare metrics
 cat Model\ Training/experiments/exp01/results.json
 cat Model\ Training/experiments/exp05/results.json
-cat Model\ Training/experiments/exp06/results.json
 ```
+
+## 🎯 Key Decisions
+
+### Exp05 as Production Standard
+
+Why **exp05** is recommended:
+
+| Feature | exp01-05 | exp05 |
+|---------|----------|-------|
+| Dataset scope | Per-architecture | Per-architecture |
+| Train/test split | Stratified | Stratified |
+| Model count | Base + quant | Base + quant |
+| Scalability | Limited | ✅ Better |
+| Generalization | Per-architecture | ✅ Consistent |
+| Training time | Longer | ✅ Faster |
+| Accuracy | Mixed | ✅ Better |
 
 ## 📊 Architecture Overview
 
@@ -202,7 +206,7 @@ cat Model\ Training/experiments/exp06/results.json
 PowerQuant (Root)
 │
 ├─── BUILD_SYSTEM.md (this file)
-├─── pyproject.toml (dependencies via uv)
+python build.py build-model exp05
 ├─── build.py (CLI implementation)
 │
 ├─── Dataset Collection/
@@ -224,23 +228,22 @@ PowerQuant (Root)
 │    ├─── app.py (Flask backend)
 │    ├─── index.html (web UI)
 │    └─── models/ (symlink to trained models)
-│
 └─── Results/ (experiment summaries in LaTeX)
 ```
 
 ## 🎯 Key Decisions
 
-### Exp06 as Production Standard
+### Exp05 as Production Standard
 
-Why **exp06** is recommended:
+Why **exp05** is recommended:
 
-| Feature | exp01-05 | exp06 |
+| Feature | exp01-05 | exp05 |
 |---------|----------|-------|
-| Dataset scope | Per-architecture | Entire dataset |
-| Train/test split | Stratified | Random 80/20 |
-| Model count | 8 (base + quant) | 4 (quant only) |
+| Dataset scope | Per-architecture | Per-architecture |
+| Train/test split | Stratified | Stratified |
+| Model count | Base + quant | Base + quant |
 | Scalability | Limited | ✅ Better |
-| Generalization | Biased | ✅ Unbiased |
+| Generalization | Per-architecture | ✅ Consistent |
 | Training time | Longer | ✅ Faster |
 | Accuracy | Mixed | ✅ Better |
 
@@ -256,7 +259,6 @@ Why **exp06** is recommended:
 - $\text{Memory} = \sum (\text{read} + \text{write})$
 - Captures sustained bandwidth usage
 - Better predictor of power than peak memory
-
 **Arithmetic Intensity**:
 - $I = \frac{\text{FLOPs}}{\text{Bytes Transferred}}$
 - Roofline model metric
@@ -277,10 +279,6 @@ python build.py collect-dataset
 python build.py collect-dataset --dataset data/my_custom.csv
 
 # Models
-python build.py list-experiments
-python build.py build-model exp06
-python build.py build-model exp06 --file run_quant_catboost.py
-
 # Web
 cd www && python app.py
 ```
