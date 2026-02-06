@@ -106,7 +106,7 @@ Trains 4 quantile regression models on GPU power data.
 
 **Recommended:** Use **exp05** for standard runs (per-architecture split)
 
-### 4. Web Application (Flask)
+### 4. Web Application (Flask) (Under Development)
 Interactive web UI for PyTorch model analysis and power prediction.
 
 **Features:**
