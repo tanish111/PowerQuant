@@ -113,10 +113,10 @@ Interactive web UI for PyTorch model analysis and power prediction.
 - CodeMirror editor with syntax highlighting
 - Automatic feature extraction from code
 - Power predictions from 4 quantile models
-- REST API endpoints
+- REST API endpoints 
 - Model comparison view
 
-**Deploy:** `cd www && python app.py` then open `http://localhost:5000`
+**Deploy:** `cd www && python app.py` then open `http://localhost:5000` (Under Development)
 
 ## 📊 Data Flow
 
@@ -139,12 +139,6 @@ Training Pipeline (exp01-05)
     ├─→ Optuna hyperparameter tuning
     ├─→ Train 4 models
     └─→ Save to models/exp*_quant_*.pkl
-    ↓
-Web Application
-    ├─→ Load trained models
-    ├─→ Analyze PyTorch code
-    ├─→ Extract features (same pipeline)
-    └─→ Predict power with quantiles
 ```
 
 ## 🎯 Experiment Comparison
@@ -165,7 +159,7 @@ All models report:
 - **MAE** - Mean Absolute Error in watts (lower = better)
 - **RMSE** - Root Mean Squared Error in watts (lower = better)
 
-Example output:
+**Example output**:
 ```
 Test R²:   0.854 (explains 85.4% of variance)
 Test MAE:  15.23 W (average error)
@@ -214,23 +208,6 @@ python build.py build-model exp05 --file run_quant_catboost.py
 python build.py build-model exp01              # Baseline
 python build.py build-model exp05              # Architecture-stratified
 # Compare results in Model Training/experiments/exp*/results.json
-```
-
-### Workflow 5: API Integration
-```python
-import requests
-
-# Analyze PyTorch model
-response = requests.post("http://localhost:5000/api/analyze",
-    json={"code": "import torch\n..."})
-features = response.json()["features"]
-
-# Get power predictions
-response = requests.post("http://localhost:5000/api/predict",
-    json={"features": features})
-predictions = response.json()["predictions"]
-
-print(predictions["catboost"]["mean"])  # Expected power (W)
 ```
 
 ## 📦 Dependencies
@@ -291,7 +268,7 @@ python build.py build-model exp05
 cd www && python app.py
 ```
 
-### Production (Gunicorn)
+### Production (Gunicorn) (Under Development)
 ```bash
 pip install gunicorn
 gunicorn -w 4 -b 0.0.0.0:5000 www/app:app
@@ -365,50 +342,6 @@ python build.py build-model exp05
 - **[SUBSYSTEMS.md](SUBSYSTEMS.md)** - Overview of all subsystems and workflows
 - **[Model Training/README.md](Model%20Training/README.md)** - Training pipeline details
 - **[KernelBench README](Dataset%20Collection/Dataset-2/Benchmark%20Suite/KernelBench/README.md)** - Data collection
-- **[Web App README](www/README.md)** - Web interface and API
-
-## 📊 Key Technical Details
-
-### Memory Model
-PowerQuant uses **cumulative data movement**, not peak memory:
-$$\text{Memory} = \sum_{\text{layers}} (\text{bytes\_read} + \text{bytes\_written})$$
-
-This captures sustained bandwidth usage and is more predictive of power consumption.
-
-### FLOP Counting
-Uses `fvcore.nn.FlopCounterMode` with 100+ custom operation handlers:
-$$\text{FLOPs} = \sum_{\text{ops}} \text{flops\_per\_op}(W, H, C, K, \ldots)$$
-
-### Arithmetic Intensity
-Roofline model metric:
-$$I = \frac{\text{FLOPs}}{\text{Bytes Transferred}} \quad [\text{FLOP/Byte}]$$
-
-Higher intensity indicates better compute utilization relative to memory bandwidth.
-
-## 🎓 Citation
-
-If you use PowerQuant in your research, please cite:
-
-```bibtex
-@software{powerquant2026,
-  title={PowerQuant: GPU Power Consumption Prediction},
-  author={Anonymous},
-  year={2026},
-  url={https://github.com/anonymous/PowerQuant}
-}
-```
-
-## 📝 License
-
-[Include your license here]
-
-## 👥 Contributing
-
-Contributions welcome! Please:
-1. Read [SUBSYSTEMS.md](SUBSYSTEMS.md) for architecture overview
-2. Follow code style in existing files
-3. Update documentation for new features
-4. Test with `python build.py list-experiments`
 
 ## 🤝 Support
 
@@ -418,7 +351,5 @@ Contributions welcome! Please:
 
 ---
 
-**Last Updated:** February 1, 2026  
-**Status:** ✅ Production Ready  
 **Python:** 3.10+  
 **CUDA:** Required for data collection (optional for predictions)
