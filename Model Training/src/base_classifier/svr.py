@@ -12,7 +12,7 @@ class SVRConfig(BaseModel):
     gamma: Union[str, float] = 'scale'  # 'scale', 'auto', or float
     degree: int = 3
     coef0: float = 0.0
-    verbose: True
+    verbose: bool = True
 
     def to_json_dict(self) -> Dict[str, Any]:
         """Convert config to JSON-serializable dictionary."""

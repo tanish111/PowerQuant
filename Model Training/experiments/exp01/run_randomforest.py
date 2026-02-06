@@ -16,6 +16,9 @@ from experiments.exp01.utils import train_and_evaluate_model
 from src.base_classifier.randomforest import RandomForest, RandomForestConfig
 
 
+# Global variable for dataset path
+DATASET_PATH = None
+
 randomforest_config = RandomForestConfig(
     n_estimators=100,
     max_depth=10,
@@ -41,7 +44,7 @@ def objective(trial):
 
     # Train and evaluate
     model = RandomForest(config)
-    model, metrics = train_and_evaluate_model(model, quantile=False)
+    model, metrics = train_and_evaluate_model(model, quantile=False, data_path=DATASET_PATH)
 
     # Log results
     logger = ExperimentLogger(experiment_id='exp01_randomforest')
@@ -51,6 +54,12 @@ def objective(trial):
 
 
 def main():
+    global DATASET_PATH
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--dataset', type=str, default='data/combined_static_20260127_092347.csv')
+    args = parser.parse_args()
+    DATASET_PATH = args.dataset
+    
     study = optuna.create_study(direction='maximize')
     study.optimize(objective, n_trials=20)
 

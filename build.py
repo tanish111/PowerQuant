@@ -55,7 +55,13 @@ def run_command(cmd: List[str], cwd: Optional[Path] = None, description: str = "
     console.print(f"[dim]{' '.join(cmd)}[/dim]")
     
     try:
-        result = subprocess.run(cmd, cwd=cwd, check=False)
+        # Set PYTHONPATH and PROJECT_ROOT for Model Training directory
+        env = os.environ.copy()
+        if cwd:
+            env["PYTHONPATH"] = str(cwd)
+            # Set PROJECT_ROOT to Model Training directory for training scripts
+            env["PROJECT_ROOT"] = str(cwd)
+        result = subprocess.run(cmd, cwd=cwd, env=env, check=False)
         return result.returncode
     except Exception as e:
         console.print(f"[red]✗ Error:[/red] {e}")

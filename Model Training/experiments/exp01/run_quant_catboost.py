@@ -18,6 +18,9 @@ from src.base_classifier.catboost import CatBoost, CatBoostConfig
 from src.quantile_classifier.quant_classifier import QuantileClassifier
 
 
+# Global variable for dataset path
+DATASET_PATH = None
+
 catboost_config = CatBoostConfig(
     iterations=5000,
     learning_rate=0.01,
@@ -60,7 +63,7 @@ def objective(trial):
     # Train and evaluate
     base_classifier = CatBoost(config)
     model = QuantileClassifier(base_classifier)
-    model, metrics = train_and_evaluate_model(model)
+    model, metrics = train_and_evaluate_model(model, data_path=DATASET_PATH)
 
     # Log results
     logger = ExperimentLogger(experiment_id='exp01_quant_catboost')
@@ -70,6 +73,12 @@ def objective(trial):
 
 
 def main():
+    global DATASET_PATH
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--dataset', type=str, default='data/combined_static_20260127_092347.csv')
+    args = parser.parse_args()
+    DATASET_PATH = args.dataset
+    
     study = optuna.create_study(direction='maximize')
     study.optimize(objective, n_trials=20)
 

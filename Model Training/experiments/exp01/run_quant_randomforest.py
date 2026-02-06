@@ -17,6 +17,9 @@ from src.base_classifier.randomforest import RandomForest, RandomForestConfig
 from src.quantile_classifier.quant_classifier import QuantileClassifier
 
 
+# Global variable for dataset path
+DATASET_PATH = None
+
 randomforest_config = RandomForestConfig(
     n_estimators=100,
     max_depth=10,
@@ -43,7 +46,7 @@ def objective(trial):
     # Train and evaluate
     base_classifier = RandomForest(config)
     model = QuantileClassifier(base_classifier)
-    model, metrics = train_and_evaluate_model(model, quantile=True)
+    model, metrics = train_and_evaluate_model(model, quantile=True, data_path=DATASET_PATH)
 
     # Log results
     logger = ExperimentLogger(experiment_id='exp01_quant_randomforest')
@@ -53,6 +56,12 @@ def objective(trial):
 
 
 def main():
+    global DATASET_PATH
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--dataset', type=str, default='data/combined_static_20260127_092347.csv')
+    args = parser.parse_args()
+    DATASET_PATH = args.dataset
+    
     study = optuna.create_study(direction='maximize')
     study.optimize(objective, n_trials=20)
 

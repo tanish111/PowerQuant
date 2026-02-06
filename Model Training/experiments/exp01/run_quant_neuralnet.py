@@ -17,6 +17,9 @@ from src.base_classifier.neuralnet import NeuralNet, NeuralNetConfig
 from src.quantile_classifier.quant_classifier import QuantileClassifier
 
 
+# Global variable for dataset path
+DATASET_PATH = None
+
 neuralnet_config = NeuralNetConfig(
     hidden_layer_sizes=(8, 100, 1),
     activation='relu',
@@ -59,7 +62,7 @@ def objective(trial):
     base_classifier = NeuralNet(config)
     model = QuantileClassifier(base_classifier)
 
-    model, metrics = train_and_evaluate_model(model, quantile=True)
+    model, metrics = train_and_evaluate_model(model, quantile=True, data_path=DATASET_PATH)
 
     # Log results
     logger = ExperimentLogger(experiment_id='exp01_quant_neuralnet')
@@ -69,6 +72,12 @@ def objective(trial):
 
 
 def main():
+    global DATASET_PATH
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--dataset', type=str, default='data/combined_static_20260127_092347.csv')
+    args = parser.parse_args()
+    DATASET_PATH = args.dataset
+    
     study = optuna.create_study(direction='maximize')
     study.optimize(objective, n_trials=20)
 

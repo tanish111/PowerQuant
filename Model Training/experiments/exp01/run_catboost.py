@@ -1,6 +1,7 @@
 import os
 import sys
 from pathlib import Path
+import argparse
 
 import dotenv
 
@@ -23,6 +24,9 @@ import optuna
 from experiments.exp01.logger import ExperimentLogger
 from experiments.exp01.utils import train_and_evaluate_model
 from src.base_classifier.catboost import CatBoost, CatBoostConfig
+
+# Global variable for dataset path
+DATASET_PATH = None
 
 
 catboost_config = CatBoostConfig(
@@ -74,6 +78,12 @@ def objective(trial):
 
 
 def main():
+    global DATASET_PATH
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--dataset', type=str, default='data/combined_static_20260127_092347.csv')
+    args = parser.parse_args()
+    DATASET_PATH = args.dataset
+    
     study = optuna.create_study(direction='maximize')
     study.optimize(objective, n_trials=20)
 
