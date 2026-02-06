@@ -1,6 +1,6 @@
 # PowerQuant: GPU Power Consumption Prediction
 
-A complete ML pipeline for predicting GPU power consumption from PyTorch model characteristics using quantile regression.
+A complete ML pipeline for predicting GPU power consumption from GPU kernel and PyTorch model characteristics using multiple regression models (CatBoost, Neural Networks, Random Forest, SVR) with support for both standard and quantile predictions.
 
 ## 🎯 Quick Start (30 seconds)
 
@@ -8,13 +8,14 @@ A complete ML pipeline for predicting GPU power consumption from PyTorch model c
 cd /path/to/PowerQuant
 
 # 1. Install dependencies
-pip install torch pandas numpy scikit-learn optuna catboost joblib click rich python-dotenv
+pip install -r pyproject.toml  # or: uv sync
 
-# 2. Collect dataset (requires NVIDIA GPU)
-python build.py collect-dataset
+# 2. List available experiments
+python build.py list-experiments
 
-# 3. Train models
-python build.py build-model exp05
+# 3. Train models (in-distribution or out-of-distribution)
+python build.py build-model in-distribution --dataset dataset-1
+# or: python build.py build-model out-of-distribution --dataset dataset-2 --test-arch 0
 
 # 4. Launch web app
 cd www && python app.py
@@ -32,26 +33,55 @@ PowerQuant/
 ├── pyproject.toml                              # Dependencies (uv)
 │
 ├── Dataset Collection/
+│   ├── Dataset-1(works for C++ CUDA Codes)/
+│   │   ├── README.md                          # C++ CUDA dataset details
+│   │   └── Datasets/
+│   │       └── combined_df.csv                # Processed C++ kernel data
+│   │
 │   └── Dataset-2(works for Python PyTorch Models)/
-│       └── Benchmark Suite/KernelBench/
-│           ├── README.md                       # Detailed KernelBench docs
-│           ├── scripts/
-│           │   ├── generate_baseline_time.py  # Data collection
-│           │   ├── extract_model_features.py  # FLOPs & memory extraction
-│           │   └── variable_scaler.py         # Feature normalization
-│           └── Dataset/                        # Output CSVs (symlinked)
+│       ├── README.md                          # PyTorch dataset details
+│       ├── Benchmark Suite/KernelBench/
+│       │   ├── README.md                      # KernelBench documentation
+│       │   ├── scripts/
+│       │   │   ├── generate_baseline_time.py
+│       │   │   ├── extract_model_features.py
+│       │   │   └── variable_scaler.py
+│       │   └── Dataset/
+│       │
+│       └── Dataset/
+│           ├── combined_df.csv                # For Dataset-1
+│           └── combined_static_20260127_092347.csv  # For Dataset-2
 │
 ├── Model Training/
-│   ├── README.md                              # Detailed training docs
-│   ├── data/                                  # Symlink to Dataset
+│   ├── README.md                              # Training pipeline docs
+│   ├── data/                                  # Symlink to datasets
 │   ├── models/                                # Trained models (joblib)
 │   ├── experiments/
-│   │   ├── exp01/                            # Baseline experiment
-│   │   ├── exp02-05/                         # Alternative configs
-│   │   └── exp05/                            # Quantile models (stratified split)
+│   │   ├── exp_in_distribution/               # NEW: In-distribution experiment
+│   │   │   ├── utils.py                       # Unified utils (auto-detects dataset)
+│   │   │   ├── logger.py                      # Result logging
+│   │   │   ├── run_catboost.py
+│   │   │   ├── run_neuralnet.py
+│   │   │   ├── run_randomforest.py
+│   │   │   ├── run_svr.py
+│   │   │   ├── run_quant_catboost.py          # Quantile-wrapped versions
+│   │   │   ├── run_quant_neuralnet.py
+│   │   │   ├── run_quant_randomforest.py
+│   │   │   └── run_quant_svr.py
+│   │   │
+│   │   └── exp_out_of_distribution/           # NEW: Out-of-distribution experiment
+│   │       ├── utils.py                       # Architecture-based splitting
+│   │       ├── logger.py
+│   │       └── [same 8 run_*.py scripts]
+│   │
 │   └── src/
-│       ├── base_classifier/                  # CatBoost, NeuralNet, RandomForest, SVR
+│       ├── base_classifier/                  # Model implementations
+│       │   ├── catboost.py
+│       │   ├── neuralnet.py
+│       │   ├── randomforest.py
+│       │   └── svr.py
 │       ├── quantile_classifier/              # Quantile regression wrapper
+│       │   └── quant_classifier.py
 │       └── utils/                            # Helper utilities
 │
 ├── www/
@@ -60,51 +90,90 @@ PowerQuant/
 │   ├── index.html                            # CodeMirror editor UI
 │   └── models/                               # Symlink to trained models
 │
-└── Results/
-    └── *.tex                                 # Experiment summaries (LaTeX)
+└── Results/                                  # Experiment results
 ```
 
 ## 🚀 Main Components
 
 ### 1. Build System (`build.py`)
-Python-based Makefile-like CLI using Click and `uv` for dependency management.
+Python-based CLI using Click framework for managing datasets and training models.
 
 ```bash
-python build.py collect-dataset              # Collect GPU benchmark data
-python build.py build-model <exp>            # Train models for experiment
-python build.py list-experiments             # Show available experiments
-python build.py status                       # Check project setup
+# List available experiments
+python build.py list-experiments
+
+# Train models
+python build.py build-model <experiment> --dataset <dataset> [--test-arch <N>]
+
+# Available experiments:
+#   - in-distribution   : Train and test on same architecture distribution
+#   - out-of-distribution: Test on unseen architecture (leave-one-out)
+
+# Available datasets:
+#   - dataset-1: C++ CUDA kernel data (combined_df.csv)
+#   - dataset-2: PyTorch model data (combined_static_20260127_092347.csv)
+
+# Examples:
+python build.py build-model in-distribution --dataset dataset-1
+python build.py build-model out-of-distribution --dataset dataset-2 --test-arch 0
+
+# Train specific model
+python build.py build-model in-distribution --dataset dataset-1 --file run_catboost.py
+
+# Check system status
+python build.py status
 ```
 
-### 2. KernelBench Dataset Collection
-PyTorch benchmark suite for extracting GPU kernel features and power measurements.
+### 2. Two Experiment Types
 
-**Key metrics:**
-- FLOPs (via fvcore with 100+ custom op handlers)
-- Memory read/write (cumulative model)
-- Arithmetic intensity
-- Graph structure (nodes, unique ops)
-- Power consumption (from PowerAPI or measurements)
+#### **In-Distribution (Standard)**
+- Train and test on same architecture distribution
+- Uses standard 80/20 train/test split
+- Good for: Overall power prediction accuracy
+- Command: `python build.py build-model in-distribution --dataset dataset-1`
 
-**Output:** CSV files with dynamic feature columns
+#### **Out-of-Distribution (Generalization)**
+- Train on 3 architectures, test on 1 holdout architecture
+- Leave-one-architecture-out cross-validation
+- Good for: Testing generalization to unseen hardware
+- Requires: `--test-arch 0|1|2|3` parameter
+- Command: `python build.py build-model out-of-distribution --dataset dataset-2 --test-arch 0`
 
-### 3. Model Training Pipeline
-Trains 4 quantile regression models on GPU power data.
+### 3. Dataset Support
 
-**Available Models:**
-- **CatBoost** - Gradient boosting on categorical features
-- **NeuralNet** - Multi-layer perceptron with configurable hidden layers
-- **RandomForest** - Ensemble of decision trees
-- **SVR** - Support Vector Regression with RBF/polynomial kernels
+#### **Dataset-1: C++ CUDA Kernels**
+- **File:** `combined_df.csv`
+- **Rows:** 15,054 kernel kernels
+- **Features (8):** avg_comp_lat, avg_glob_lat, glob_inst_kernel, glob_load_sm, glob_store_sm, misc_inst_kernel, inst_issue_cycles, cache_penalty
+- **Target:** Avg (power consumption)
+- **Architectures:** K80, Tesla, Ampere, Ada
 
-**Key Features:**
-- Optuna hyperparameter tuning (20 trials per model)
-- Dynamic feature selection from CSV headers
-- Architecture one-hot encoding
-- Automatic model serialization with joblib
-- Evaluation: R², MAE, RMSE metrics
+#### **Dataset-2: PyTorch Models**
+- **File:** `combined_static_20260127_092347.csv`
+- **Rows:** Diverse PyTorch models
+- **Features (7):** total_bytes_read_mb, total_bytes_written_mb, total_bytes_mb, total_flops_m, arithmetic_intensity, num_nodes, count_unique_ops
+- **Target:** power_consumption
+- **Architectures:** Various GPU models
 
-**Recommended:** Use **exp05** for standard runs (per-architecture split)
+**Auto-Detection:** The system automatically detects which dataset is provided and loads appropriate features.
+
+### 4. Available Models (8 per Experiment)
+
+Each experiment includes **8 training scripts**:
+
+**Standard Models:**
+- `run_catboost.py` - Gradient boosting with categorical feature support
+- `run_neuralnet.py` - Multi-layer perceptron (1-4 layers, 32-256 hidden dims)
+- `run_randomforest.py` - Ensemble of decision trees
+- `run_svr.py` - Support Vector Regression (linear, RBF, poly kernels)
+
+**Quantile-Wrapped Models:**
+- `run_quant_catboost.py` - CatBoost with quantile normalization
+- `run_quant_neuralnet.py` - Neural Network with quantile normalization
+- `run_quant_randomforest.py` - Random Forest with quantile normalization
+- `run_quant_svr.py` - SVR with quantile normalization
+
+**Hyperparameter Tuning:** All models use Optuna with 20 trials per run.
 
 ### 4. Web Application (Flask) (Under Development)
 Interactive web UI for PyTorch model analysis and power prediction.
@@ -143,14 +212,14 @@ Training Pipeline (exp01-05)
 
 ## 🎯 Experiment Comparison
 
-| Aspect | exp01-05 |
-|--------|----------|
-| **Dataset** | Per-architecture split |
-| **Train/Test** | Stratified |
-| **Models** | Base + quantile |
-| **Training Time** | Longer |
-| **Generalization** | Per-architecture |
-| **Scalability** | Limited |
+| Aspect | In-Distribution | Out-of-Distribution |
+|--------|-----------------|---------------------|
+| **Purpose** | Standard prediction | Generalization test |
+| **Data Split** | 80/20 random split | Leave-one-arch-out |
+| **Train/Test** | Same architecture mix | Train: 3 archs, Test: 1 arch |
+| **Best For** | Overall accuracy | Hardware generalization |
+| **Test Arch Param** | Not used | Required (0-3) |
+| **Use Case** | Production deployment | Robustness testing |
 
 ## 📈 Performance Metrics
 
@@ -183,31 +252,46 @@ Automatically detected from CSV headers:
 
 ## 🛠️ Common Workflows
 
-### Workflow 1: Full Pipeline (Recommended)
+### Workflow 1: Full In-Distribution Pipeline (Recommended)
 ```bash
-# Start fresh on new GPU hardware
-python build.py collect-dataset              # 1. Collect data
-python build.py build-model exp05            # 2. Train models
-cd www && python app.py                      # 3. Use predictions
+# Standard training on Dataset-1 (C++ CUDA kernels)
+python build.py list-experiments              # See available experiments
+python build.py build-model in-distribution --dataset dataset-1
+# Trains all 8 models (4 base + 4 quantile-wrapped)
 ```
 
-### Workflow 2: Retrain with Same Data
+### Workflow 2: Out-of-Distribution Testing
 ```bash
-# Retrain exp05 models (data already collected)
-python build.py build-model exp05
+# Test generalization to unseen architecture
+python build.py build-model out-of-distribution --dataset dataset-2 --test-arch 0
+# Leave architecture 0 as test, train on architectures 1,2,3
 ```
 
 ### Workflow 3: Train Single Model
 ```bash
-# Train only CatBoost for exp05
-python build.py build-model exp05 --file run_quant_catboost.py
+# Train only CatBoost for in-distribution
+python build.py build-model in-distribution --dataset dataset-1 --file run_catboost.py
+
+# Train only Quantile SVR for out-of-distribution
+python build.py build-model out-of-distribution --dataset dataset-2 --test-arch 0 --file run_quant_svr.py
 ```
 
-### Workflow 4: Compare Experiments
+### Workflow 4: Compare Models
 ```bash
-python build.py build-model exp01              # Baseline
-python build.py build-model exp05              # Architecture-stratified
-# Compare results in Model Training/experiments/exp*/results.json
+# Run all 8 models in-distribution with Dataset-1
+python build.py build-model in-distribution --dataset dataset-1
+
+# Then compare results:
+ls Model\ Training/results/in_distribution_*_results.jsonl
+```
+
+### Workflow 5: Test Different Dataset
+```bash
+# Switch to PyTorch dataset (Dataset-2)
+python build.py build-model in-distribution --dataset dataset-2
+
+# Or test out-of-distribution with leave-one-arch-out
+python build.py build-model out-of-distribution --dataset dataset-2 --test-arch 1
 ```
 
 ## 📦 Dependencies
@@ -317,8 +401,9 @@ lsof -ti:5000 | xargs kill -9
 # List available experiments
 python build.py list-experiments
 
-# Create exp05 if missing
-python build.py build-model exp05
+# Should show:
+# - in-distribution (8 files)
+# - out-of-distribution (8 files)
 ```
 
 ### "Models not found for predictions"
@@ -326,14 +411,34 @@ python build.py build-model exp05
 # Check if models are trained
 ls Model\ Training/models/
 
-# Should show:
-# exp05_quant_catboost.pkl
-# exp05_quant_neuralnet.pkl
-# exp05_quant_randomforest.pkl
-# exp05_quant_svr.pkl
+# Should show files like:
+# in_distribution_catboost_model.pkl
+# in_distribution_quant_neuralnet_model.pkl
+# out_of_distribution_arch0_svr_model.pkl
+# etc.
 
-# If missing, retrain
-python build.py build-model exp05
+# If missing, retrain:
+python build.py build-model in-distribution --dataset dataset-1
+```
+
+### "Dataset-1 vs Dataset-2 confusion"
+```bash
+# Dataset-1: C++ CUDA kernels
+python build.py build-model in-distribution --dataset dataset-1
+
+# Dataset-2: PyTorch models
+python build.py build-model in-distribution --dataset dataset-2
+
+# System auto-detects columns and selects appropriate features
+```
+
+### "test-arch parameter required"
+```bash
+# Out-of-distribution REQUIRES test-arch (0-3)
+python build.py build-model out-of-distribution --dataset dataset-2 --test-arch 0
+#                                                                    ^^^^^^^^^^^^^^
+# In-distribution DOES NOT use test-arch
+python build.py build-model in-distribution --dataset dataset-1
 ```
 
 ## 📖 For More Details

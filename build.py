@@ -111,36 +111,68 @@ def collect_dataset(dataset: str):
 
 
 @cli.command()
-@click.argument("exp", type=str)
+@click.argument("exp", type=click.Choice(["in-distribution", "out-of-distribution"]))
 @click.option(
     "--file",
     type=str,
     default=None,
-    help="Specific file to run (e.g., run_quant_catboost.py). If not specified, runs all."
+    help="Specific file to run (e.g., run_catboost.py). If not specified, runs all."
 )
 @click.option(
     "--dataset",
-    type=str,
-    default="data/combined_static_20260127_092347.csv",
-    help="Dataset CSV file (relative to Model Training/)"
+    type=click.Choice(["dataset-1", "dataset-2"]),
+    required=True,
+    help="Dataset type: 'dataset-1' for C++ CUDA or 'dataset-2' for PyTorch"
 )
-def build_model(exp: str, file: Optional[str], dataset: str):
-    """Build/train model for a specific experiment."""
+@click.option(
+    "--test-arch",
+    type=int,
+    default=None,
+    help="(Out-of-distribution only) Architecture index to use as test set (0-3)"
+)
+def build_model(exp: str, file: Optional[str], dataset: str, test_arch: Optional[int]):
+    """Build/train model for a specific experiment.
+    
+    Examples:
+        # In-distribution training with Dataset-1
+        python build.py build-model in-distribution --dataset dataset-1
+        
+        # Out-of-distribution training with Dataset-2, test on architecture 0
+        python build.py build-model out-of-distribution --dataset dataset-2 --test-arch 0
+    """
     setup_data_symlink()
     
-    # Validate experiment
-    exp_dir = MODEL_TRAINING_DIR / "experiments" / exp
+    # Map dataset choice to file path
+    dataset_paths = {
+        "dataset-1": "data/combined_df.csv",
+        "dataset-2": "data/combined_static_20260127_092347.csv"
+    }
+    dataset_path = dataset_paths[dataset]
+    
+    # Validate experiment - convert hyphenated name to underscored folder name
+    folder_name = exp.replace("-", "_")
+    exp_dir = MODEL_TRAINING_DIR / "experiments" / f"exp_{folder_name}"
     if not exp_dir.exists():
         console.print(f"[red]✗ Experiment not found:[/red] {exp_dir}")
         console.print(f"[dim]Available experiments:[/dim]")
-        for e in sorted(MODEL_TRAINING_DIR.glob("experiments/exp*")):
-            console.print(f"  - {e.name}")
+        console.print(f"  - in-distribution")
+        console.print(f"  - out-of-distribution")
         sys.exit(1)
+    
+    # Validate test-arch for out-of-distribution
+    if exp == "out-of-distribution":
+        if test_arch is None:
+            test_arch = 0
+            console.print(f"[yellow]⚠[/yellow] No test-arch specified, using default: 0")
+    elif test_arch is not None:
+        console.print(f"[yellow]⚠[/yellow] test-arch is only used for out-of-distribution experiments")
     
     console.print(f"\n[bold cyan]Building Model[/bold cyan]")
     console.print(f"Experiment: {exp}")
     console.print(f"Directory: {exp_dir}")
-    console.print(f"Dataset: {dataset}")
+    console.print(f"Dataset: {dataset} ({dataset_path})")
+    if exp == "out-of-distribution":
+        console.print(f"Test Architecture: {test_arch}")
     
     # Find files to run
     if file:
@@ -148,7 +180,7 @@ def build_model(exp: str, file: Optional[str], dataset: str):
         script_path = exp_dir / file
         if not script_path.exists():
             console.print(f"[red]✗ File not found:[/red] {script_path}")
-            console.print(f"[dim]Available files in {exp}:[/dim]")
+            console.print(f"[dim]Available files in exp_{exp}:[/dim]")
             for f in sorted(exp_dir.glob("run_*.py")):
                 console.print(f"  - {f.name}")
             sys.exit(1)
@@ -167,8 +199,13 @@ def build_model(exp: str, file: Optional[str], dataset: str):
     for script_path in files_to_run:
         console.print(f"\n[cyan]→ Running:[/cyan] {script_path.name}")
         
+        # Build command
+        cmd = ["python", str(script_path), "--dataset", dataset_path]
+        if exp == "out-of-distribution":
+            cmd.extend(["--test-arch", str(test_arch)])
+        
         exit_code = run_command(
-            ["python", str(script_path), "--dataset", dataset],
+            cmd,
             cwd=MODEL_TRAINING_DIR,
             description=f"Training {script_path.stem}"
         )
@@ -206,54 +243,53 @@ def list_experiments():
     
     console.print(f"\n[bold cyan]Available Experiments[/bold cyan]\n")
     
+    experiments = ["in-distribution", "out-of-distribution"]
+    
     table = Table(show_header=True, header_style="bold")
     table.add_column("Experiment", style="cyan")
+    table.add_column("Description", style="white")
     table.add_column("Files", style="green")
-    table.add_column("Path")
     
-    for exp_path in sorted(exp_dir.glob("exp*")):
-        if not exp_path.is_dir():
-            continue
-        
-        run_files = list(exp_path.glob("run_*.py"))
-        file_count = len(run_files)
-        file_list = ", ".join(f.stem for f in sorted(run_files)[:3])
-        if file_count > 3:
-            file_list += f", ... (+{file_count - 3} more)"
-        
-        table.add_row(exp_path.name, f"{file_count} files", file_list)
+    for exp_name in experiments:
+        # Convert hyphenated name to underscored folder name
+        folder_name = exp_name.replace("-", "_")
+        exp_path = exp_dir / f"exp_{folder_name}"
+        if exp_path.exists():
+            files = list(exp_path.glob("run_*.py"))
+            desc = "Train and test on same architecture distribution" if exp_name == "in-distribution" else "Test on unseen architecture"
+            table.add_row(
+                exp_name,
+                desc,
+                str(len(files))
+            )
     
     console.print(table)
+    
+    console.print(f"\n[dim]Usage examples:[/dim]")
+    console.print(f"  python build.py build-model in-distribution --dataset dataset-1")
+    console.print(f"  python build.py build-model out-of-distribution --dataset dataset-2 --test-arch 0")
 
 
 @cli.command()
-@click.option("--verbose", "-v", is_flag=True, help="Show detailed paths")
-def status(verbose: bool):
-    """Show build system status."""
+def status():
+    """Check build system status."""
     console.print(f"\n[bold cyan]PowerQuant Build System Status[/bold cyan]\n")
     
-    items = {
+    checks = {
         "Root Directory": (ROOT_DIR, ROOT_DIR.exists()),
         "Dataset-2": (DATASET_2_DIR, DATASET_2_DIR.exists()),
         "KernelBench Scripts": (KERNELBENCH_SCRIPTS_DIR, KERNELBENCH_SCRIPTS_DIR.exists()),
         "Model Training": (MODEL_TRAINING_DIR, MODEL_TRAINING_DIR.exists()),
         "Data Symlink": (DATA_DIR, DATA_DIR.exists()),
-        "PROJECT_ROOT env": (None, os.getenv("PROJECT_ROOT") == PROJECT_ROOT),
+        "In-Distribution Exp": (MODEL_TRAINING_DIR / "experiments" / "exp_in_distribution", (MODEL_TRAINING_DIR / "experiments" / "exp_in_distribution").exists()),
+        "Out-Of-Distribution Exp": (MODEL_TRAINING_DIR / "experiments" / "exp_out_of_distribution", (MODEL_TRAINING_DIR / "experiments" / "exp_out_of_distribution").exists()),
     }
     
-    for name, (path, exists) in items.items():
+    for name, (path, exists) in checks.items():
         status_icon = "[green]✓[/green]" if exists else "[red]✗[/red]"
-        if path:
-            if verbose:
-                console.print(f"{status_icon} {name}: {path}")
-            else:
-                console.print(f"{status_icon} {name}")
-        else:
-            console.print(f"{status_icon} {name}")
+        console.print(f"{status_icon} {name}")
     
-    # Count experiments
-    exp_count = len(list(MODEL_TRAINING_DIR.glob("experiments/exp*")))
-    console.print(f"\n[cyan]Experiments:[/cyan] {exp_count}")
+    console.print(f"\n[cyan]Use 'python build.py list-experiments' to see available experiments[/cyan]")
 
 
 if __name__ == "__main__":
